@@ -1,0 +1,1 @@
+Laboratory complex for studying the genetic algorithm
