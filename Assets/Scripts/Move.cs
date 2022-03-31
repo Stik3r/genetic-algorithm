@@ -17,8 +17,18 @@ public class Move : MonoBehaviour
     public float maxMotorTorque; // maximum torque the motor can apply to wheel
     public float maxSteeringAngle; // maximum steer angle the wheel can have
     public float maxBrakTorque;
+    public float motor;
+    float steering;
 
     private bool _braking;
+    Driver driver;
+    float scaleRotate = 0;
+    float scaleSpeed = 0;
+
+    private void Start()
+    {
+        driver = transform.GetComponent<Driver>();
+    }
 
     private void Update()
     {
@@ -31,9 +41,34 @@ public class Move : MonoBehaviour
             _braking = false;
         }
     }
+
+    public void SetMove(Directional directional, Directional rotate)
+    {
+        if(rotate == Directional.LEFT)
+        {
+            scaleRotate = scaleRotate == -1 ? scaleRotate : scaleRotate - 0.1f;
+            steering = maxSteeringAngle * scaleRotate;
+        }
+        else
+        {
+            scaleRotate = scaleRotate == 1 ? scaleRotate : scaleRotate + 0.1f;
+            steering = maxSteeringAngle * scaleRotate;
+        }
+        if(directional == Directional.FORWARD)
+        {
+            scaleSpeed = scaleSpeed == 1 ? scaleSpeed : scaleSpeed + 0.1f;
+            motor = maxMotorTorque * scaleSpeed;
+        }
+        else
+        {
+            scaleSpeed = scaleSpeed == -1 ? scaleSpeed : scaleSpeed - 0.1f;
+            motor = maxMotorTorque * scaleSpeed;
+        }
+    }
     public void FixedUpdate()
     {
-        float motor;
+        SetMove(driver.GetSpeed(), driver.GetRotate());
+        /*float motor;
         if (!_braking)
         {
             motor = maxMotorTorque * Input.GetAxis("Vertical");
@@ -43,7 +78,7 @@ public class Move : MonoBehaviour
             motor = 0f;
         }
         float steering = maxSteeringAngle * Input.GetAxis("Horizontal");
-
+        Debug.Log(Input.GetAxis("Vertical"));*/
         foreach (AxleInfo axleInfo in axleInfos)
         {
             if (axleInfo.steering)

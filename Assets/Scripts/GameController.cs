@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -33,6 +34,12 @@ public class GameController : MonoBehaviour
         var carObj = Instantiate(car, carPos, transform.rotation);
         carObj.transform.localScale = new Vector3(4, 4, 4);
         CarsController.cars.Add(carObj.transform);
+        Driver dr = new Driver();
+        dr.RandomWeight();
+        using (StreamWriter writer = new StreamWriter("logWeights.log", false))
+        {
+            writer.WriteLine(dr.GetWeights());
+        }
     }
 
     Vector3 GetPos(int i, int j)
