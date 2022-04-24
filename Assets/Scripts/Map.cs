@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
@@ -62,5 +63,65 @@ public class Map
     public Cell GetCell(int x, int y)
     {
         return map[x][y];
+    }
+
+    /// <summary>
+    /// Нахождение стартовой позиции
+    /// </summary>
+    /// <returns></returns>
+    public (int, int) FindStartPosition()
+    {
+        for(int i = 0; i < map.Length; i++)
+        {
+            for(int j = 0; j < map[i].Length; j++)
+            {
+                if(map[i][j] != Cell.EpmtyCell() && map[i][j].roadName.Contains("Line"))
+                {
+                    return (i, j);
+                }
+            }
+        }
+        return (0, 0);
+    }
+
+    public (int, int) LineNextSection((int, int) previous, (int, int) current, bool firstSection = false)
+    {
+        if (firstSection)
+        {
+            return (map[current.Item1][current.Item2].rotation.z == 0 ||
+            map[current.Item1][current.Item2].rotation.z == 180) ?
+            (current.Item1, current.Item2 + 1) : (current.Item1 + 1, current.Item2);
+        }
+        if(map[current.Item1][current.Item2].rotation.z == 0 ||
+            map[current.Item1][current.Item2].rotation.z == 180)
+        {
+            return current.Item2 - 1 == previous.Item2 ? (current.Item1, current.Item2 + 1)
+                : (current.Item1, current.Item2 - 1);
+        }
+        else
+        {
+            return current.Item1 - 1 == previous.Item1 ? (current.Item1 + 1, current.Item2)
+                : (current.Item1 - 1, current.Item2);
+        }
+    }
+
+    public (int, int) RotateNextSection((int, int) previous, (int, int) current)
+    {
+        switch (map[current.Item1][current.Item2].rotation.z)
+        {
+            case 0:
+                return current.Item1 + 1 == previous.Item1 ? (current.Item1, current.Item2 - 1)
+                    : (current.Item1 + 1, current.Item2);
+            case 90:
+                return current.Item1 + 1 == previous.Item1 ? (current.Item1, current.Item2 + 1)
+                    : (current.Item1 + 1, current.Item2);
+            case 180:
+                return current.Item1 - 1 == previous.Item1 ? (current.Item1, current.Item2 + 1)
+                    : (current.Item1 - 1, current.Item2);
+            default:
+                return current.Item1 - 1 == previous.Item1 ? (current.Item1, current.Item2 - 1)
+                    : (current.Item1 - 1, current.Item2);
+
+        }
     }
 }

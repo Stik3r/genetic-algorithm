@@ -648,7 +648,7 @@ GameObject:
   - component: {fileID: 9105497701373218528}
   - component: {fileID: 3160933071671439950}
   - component: {fileID: 3160933071671439941}
-  - component: {fileID: 3285536009946044825}
+  - component: {fileID: -1148961803708755271}
   m_Layer: 7
   m_Name: basic car blue(colider)
   m_TagString: Untagged
@@ -718,7 +718,7 @@ MonoBehaviour:
   maxSteeringAngle: 20
   maxBrakTorque: 850
   motor: 0
---- !u!114 &3285536009946044825
+--- !u!114 &-1148961803708755271
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -730,6 +730,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70bae6b692a258d428feadf325c5ecdb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  score: 0
 --- !u!1 &5478740361282310053
 GameObject:
   m_ObjectHideFlags: 0

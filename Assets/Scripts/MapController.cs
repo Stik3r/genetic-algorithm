@@ -10,6 +10,7 @@ public static class MapController
     public static Map map = new Map();
     [SerializeField]
     public static List<Map> maps;
+    public static GameObject[] triggers;
 
     static MapController()
     {
@@ -81,6 +82,53 @@ public static class MapController
     public static void AddMap()
     {
         maps.Add(map);
+    }
+
+    /// <summary>
+    /// Получение позиции в мире относительно позиции в массиве
+    /// </summary>
+    /// <param name="i">Индекс</param>
+    /// <param name="j">Индекс</param>
+    /// <returns></returns>
+    public static Vector3 GetPos(int i, int j)
+    {
+        double xPos = i * 15;
+        double zPos = j * 15;
+        return new Vector3((float)xPos, 0, (float)zPos);
+    }
+
+    /// <summary>
+    /// Получение угла вращения относительно угла вращения в массиве
+    /// </summary>
+    /// <param name="angels">Вектор поворота</param>
+    /// <returns></returns>
+    public static Quaternion GetAngels(Vector3 angels)
+    {
+        return Quaternion.Euler(90, 0, angels.z);
+    }
+
+    public static List<(int, int)> CreateWay()
+    {
+        List<(int, int)> way = new List<(int, int)>();
+        var prevPos = map.FindStartPosition();
+        var nextPos = map.LineNextSection((0, 0), prevPos, true);
+        var startPos = prevPos;
+        way.Add(prevPos);
+        while (nextPos != way[0])
+        {
+            way.Add(nextPos);
+            var buf = nextPos;
+            if (map.GetCell(nextPos.Item1, nextPos.Item2).roadName.Contains("Line"))
+            {
+                nextPos = map.LineNextSection(prevPos, nextPos);
+            }
+            else
+            {
+                nextPos = map.RotateNextSection(prevPos, nextPos);
+            }
+            prevPos = buf;
+        }
+        return way;
     }
 
 }

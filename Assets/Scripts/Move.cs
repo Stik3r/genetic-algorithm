@@ -18,31 +18,13 @@ public class Move : MonoBehaviour
     public float maxSteeringAngle; // maximum steer angle the wheel can have
     public float maxBrakTorque;
     public float motor;
+    
     float steering;
-
     private bool _braking;
-    Driver driver;
     float scaleRotate = 0;
     float scaleSpeed = 0;
 
-    private void Start()
-    {
-        driver = transform.GetComponent<Driver>();
-    }
-
-    private void Update()
-    {
-        if (Input.GetKey(KeyCode.Space))
-        {
-            _braking = true;
-        }
-        else
-        {
-            _braking = false;
-        }
-    }
-
-    public void SetMove(Directional directional, Directional rotate)
+    public void SetMoveValue(Directional directional, Directional rotate)
     {
         if(rotate == Directional.LEFT)
         {
@@ -57,28 +39,16 @@ public class Move : MonoBehaviour
         if(directional == Directional.FORWARD)
         {
             scaleSpeed = scaleSpeed == 1 ? scaleSpeed : scaleSpeed + 0.1f;
-            motor = maxMotorTorque * scaleSpeed;
+            motor = maxMotorTorque * 0.15f;
         }
         else
         {
             scaleSpeed = scaleSpeed == -1 ? scaleSpeed : scaleSpeed - 0.1f;
-            motor = maxMotorTorque * scaleSpeed;
+            motor = maxMotorTorque * 0.15f;
         }
     }
-    public void FixedUpdate()
+    public void MoveCar()
     {
-        SetMove(driver.GetSpeed(), driver.GetRotate());
-        /*float motor;
-        if (!_braking)
-        {
-            motor = maxMotorTorque * Input.GetAxis("Vertical");
-        }
-        else
-        {
-            motor = 0f;
-        }
-        float steering = maxSteeringAngle * Input.GetAxis("Horizontal");
-        Debug.Log(Input.GetAxis("Vertical"));*/
         foreach (AxleInfo axleInfo in axleInfos)
         {
             if (axleInfo.steering)
@@ -103,4 +73,24 @@ public class Move : MonoBehaviour
             }
         }
     }
+
+    /*private void FixedUpdate()
+    {
+        float motor = maxMotorTorque * Input.GetAxis("Vertical");
+        float steering = maxSteeringAngle * Input.GetAxis("Horizontal");
+
+        foreach (AxleInfo axleInfo in axleInfos)
+        {
+            if (axleInfo.steering)
+            {
+                axleInfo.leftWheel.steerAngle = steering;
+                axleInfo.rightWheel.steerAngle = steering;
+            }
+            if (axleInfo.motor)
+            {
+                axleInfo.leftWheel.motorTorque = motor;
+                axleInfo.rightWheel.motorTorque = motor;
+            }
+        }
+    }*/
 }
