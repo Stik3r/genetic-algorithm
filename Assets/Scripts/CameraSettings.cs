@@ -17,10 +17,9 @@ public class CameraSettings : MonoBehaviour
     {
         if (selectedCar != null)
         {
-            RaycastHit[] hits = new RaycastHit[5];
             int carLayer = LayerMask.GetMask("Car", "Trigger");
             int layerMask = (1 << carLayer);
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < Driver.rayCount; i++)
             {
                 var ray = selectedCar.transform.GetChild(2 + i);
                 var line = ray.GetComponent<LineRenderer>();
@@ -30,13 +29,11 @@ public class CameraSettings : MonoBehaviour
                 if (Physics.Raycast(new Ray(ray.position, forward), out RaycastHit raycastHit, 15f, layerMask))
                 {
                     line.SetPosition(1, raycastHit.point);
-                    hits[i] = raycastHit;
                 }
                 else
                 {
                     Vector3 secondPoint = new Vector3(ray.position.x + forward.x, ray.position.y, ray.position.z + forward.z);
                     line.SetPosition(1, secondPoint);
-                    hits[i] = raycastHit;
                 }
             }
         }
