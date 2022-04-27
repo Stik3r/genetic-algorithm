@@ -10,6 +10,190 @@ public enum Directional
     FORWARD,
     BACK
 }
+
+public class Driver : MonoBehaviour
+{
+    static readonly System.Random r = new System.Random();
+    static int carNumber = 0;
+    static public int rayCount = 6;
+    static public float[] forwardDistance;
+
+    float[] rays;
+    public float score = 0;
+    float livePoint = 0.01f;
+    float triggerPoint = 5f;
+
+    float timerDistance, timerRay;
+    float rateDistance, rateRays;
+
+    float distance;
+
+    Move move;
+    Transform lastTrigger;
+    Vector3 oldPos;
+
+    int gasIndx = 3;
+    
+    public bool Alive { get; set; }
+
+    public float[] Solution { get; set; }
+
+    void Awake()
+    {
+        rateRays = 0.1f;
+        rateDistance = 2f;
+        timerDistance = Time.time + rateDistance;
+        timerRay = Time.time + rateRays;
+        move = transform.GetComponent<Move>();
+        oldPos = transform.position;
+        rays = new float[rayCount];
+    }
+
+    void Update()
+    {
+        if (Alive)
+        {
+            if (timerDistance < Time.time)
+            {
+                Alive = distance < 8 ? false : Alive;
+                timerDistance = Time.time + rateDistance;
+                distance = 0;
+            }
+            if (timerRay < Time.time)
+            {
+                Raycast();
+                distance += Vector3.Distance(oldPos, transform.position);
+                oldPos = transform.position;
+                float scaleRotate;
+                move.SetMoveValue(GetSpeed(), GetRotate(out scaleRotate), scaleRotate);
+                move.MoveCar();
+                timerRay = Time.time + rateRays;
+            }
+            score += livePoint;
+        }
+    }
+
+    public Directional GetRotate(out float scaleRotate)
+    {
+        float left = 0;
+        float right = 0;
+        for(int i = 0; i < rayCount; i++)
+        {
+            if(i < 2)
+            {
+                right += rays[i];
+            }
+            else
+            {
+                left += rays[i];
+            }
+        }
+        Directional result = left > right ? Directional.LEFT : Directional.RIGHT;
+        scaleRotate = 0;
+        if (result == Directional.LEFT)
+        {
+            int raysIndx = 3;
+            for (int i = 0; i < gasIndx; i++)
+            {
+                scaleRotate += rays[i + raysIndx] < 15f ? Solution[i] : 0;
+            }
+        }
+        else
+        {
+            for(int i = 0; i < gasIndx; i++)
+            {
+                scaleRotate += rays[i] < 15f ? Solution[i] : 0;
+            }
+        }
+        return result;
+    }
+
+    public float GetSpeed()
+    {
+        float gas = 0;
+        float result = 0;
+        for(int i = 0; i < rayCount; i++)
+        {
+            gas += rays[i];
+        }
+        for(int i = gasIndx; i < 9; i++)
+        {
+            if(gas < forwardDistance[i - gasIndx])
+            {
+                result = Solution[i];
+                break;
+            }
+        }
+        return result;
+    }
+
+    private void Raycast()
+    {
+        RaycastHit[] hits = new RaycastHit[rayCount];
+        int carLayer = LayerMask.GetMask("Car", "Trigger");
+        int layerMask = (1 << carLayer);
+        for (int i = 0; i < rayCount; i++)
+        {
+            var ray = transform.GetChild(2 + i);
+            Vector3 forward = ray.TransformDirection(Vector3.forward) * 15;
+            Physics.Raycast(new Ray(ray.position, forward), out RaycastHit raycastHit, 15f, layerMask);
+            hits[i] = raycastHit;
+        }
+        SetRays(hits);
+    }
+
+    public void SetRays(RaycastHit[] hits)
+    {
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (hits[i].collider != null)
+            {
+                rays[i] = hits[i].distance;
+            }
+            else
+            {
+                rays[i] = 15f;
+            }
+        }
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        Alive = false;
+        transform.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeAll;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (lastTrigger == null)
+        {
+            lastTrigger = other.transform.parent;
+            return;
+        }
+        int indx = Array.IndexOf(MapController.triggers, lastTrigger.gameObject) + 1;
+        if (indx == MapController.triggers.Length)
+        {
+            lastTrigger = other.transform.parent;
+            score += triggerPoint;
+        }
+        else
+        {
+            if (MapController.triggers[indx].name == other.transform.parent.name)
+            {
+                score += triggerPoint;
+                lastTrigger = other.transform.parent;
+            }
+            else
+            {
+                triggerPoint = 0;
+                livePoint = 0;
+                Alive = false;
+                transform.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeAll;
+            }
+        }
+    }
+}
+/*
 public class Driver:MonoBehaviour
 {
     static readonly System.Random r = new System.Random();
@@ -277,4 +461,4 @@ public class Driver:MonoBehaviour
             score += livePoint;
         }
     }
-}
+}*/
