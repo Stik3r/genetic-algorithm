@@ -25,7 +25,6 @@ public class Driver:MonoBehaviour
 
     double[][] weightsRotate;
     double[][] weightsForward;
-    //double[][] weightsStop;
     Move move;
 
     Transform previousTrigger;
