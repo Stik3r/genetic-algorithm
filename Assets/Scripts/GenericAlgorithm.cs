@@ -6,10 +6,12 @@ using UnityEngine;
 public class GenericAlgorithm
 {
     Population p = new Population();
-    double percentSelect = 0.2;
+    double percentBest = 0.05;
+    double percentSelect = 0.35;
     double percentMutationIndividuals = 1;
-    double percentMutation = 0.05;
-    public int countPopulation = 100;
+    double percentMutation = 0.01;
+    public int countPopulation = 150;
+    int dontChangeBestCount = 0;
     int generationNumber = 1;
     System.Random r = new System.Random();
 
@@ -29,11 +31,22 @@ public class GenericAlgorithm
 
     Driver[] Select(Driver[] individuals)
     {
-        var scoreCollections = from driver in individuals
-                               select driver.score;
+        float[] scoreCollections = new float[countPopulation];
+        for(int i = 0; i < countPopulation; i++)
+        {
+            scoreCollections[i] = individuals[i].score;
+        
+        }
+        var drivers = (from driver in individuals        // отбор небольшого процента особей которые 
+                         orderby driver.score descending// не будет изменяться
+                         select driver).ToArray<Driver>();
         int[] indexes = FPS(scoreCollections.ToArray());
         Driver[] bestDriver = new Driver[(int)(individuals.Length * percentSelect)];
-        for(int i = 0; i < bestDriver.Length; i++)
+        for(int i = 0; i < dontChangeBestCount; i++)
+        {
+            bestDriver[i] = drivers[i];
+        }
+        for (int i = dontChangeBestCount; i < bestDriver.Length; i++)
         {
             bestDriver[i] = individuals[indexes[i]];
         }
@@ -48,7 +61,6 @@ public class GenericAlgorithm
         while (count < scores.Count() * percentSelect)
         {
             int indx = r.Next(scores.Length);
-            Debug.Log("1");
             float probability = (float)(r.Next(100) + r.NextDouble());
             if(probability <= scores[indx] / allScore * 100)
             {
@@ -65,20 +77,20 @@ public class GenericAlgorithm
     public void StartWorkAlghoritm()
     {
         string logs = "";
-
         var best = Select(p.GetDrivers());
         Driver[] newIndividuals = Replication(best);
-        File.WriteAllText("Log.txt", logs);
         newIndividuals = Mutation(newIndividuals);
         p.SetPopulation(newIndividuals);
         if (!Directory.Exists("Generations"))
         {
             Directory.CreateDirectory("Generations");
         }
-        foreach(var drive in newIndividuals)
+        for(int i = 0; i < dontChangeBestCount; i++)
         {
             logs += $"car_{Driver.number}\n";
-            logs += drive.GetWeightsLogs();
+            logs += best[i].GetWeightsLogs();
+            logs += "\n";
+            logs += "Счет: " + best[i].score;
             logs += "\n";
             Driver.number++;
         }
@@ -95,7 +107,11 @@ public class GenericAlgorithm
     public Driver[] Replication(Driver[] bestIndividuals)
     {
         Driver[] newIndividuals = new Driver[countPopulation];
-        for(int i = 0; i < countPopulation; i++)
+        for(int i = 0; i < dontChangeBestCount; i++)
+        {
+            newIndividuals[i] = bestIndividuals[i];
+        }
+        for(int i = dontChangeBestCount; i < countPopulation; i++)
         {
             Driver parent_1 = bestIndividuals[r.Next(bestIndividuals.Length)];
             Driver parent_2 = bestIndividuals[r.Next(bestIndividuals.Length)];
@@ -113,20 +129,34 @@ public class GenericAlgorithm
     /// <returns></returns>
     Driver OnePointCrossover(Driver parent_1, Driver parent_2)
     {
-        int point = r.Next(Driver.rayCount);
-        double[][] weightRotate = new double[Driver.rayCount][];
-        double[][] weightForward = new double[Driver.rayCount][];
-        for(int i = 0; i < Driver.rayCount; i++)
+        int point = r.Next(Driver.rayCount / 2 + (Driver.rayCount - 1));
+        double[][] weightRotate = new double[Driver.rayCount / 2][];
+        double[][] weightForward = new double[Driver.rayCount - 1][];
+        for(int i = 0; i < Driver.rayCount / 2 + (Driver.rayCount - 1); i++)
         {
             if(i < point)
             {
-                weightRotate[i] = parent_1.WeightsRotate[i];
-                weightForward[i] = parent_1.WeightsForward[i];
+                if(i < Driver.rayCount / 2)
+                {
+                    weightRotate[i] = NewWeights(parent_1.WeightsRotate[i]);
+                }
+                else
+                {
+                    weightForward[i - (Driver.rayCount / 2)] =
+                        NewWeights(parent_1.WeightsForward[i - (Driver.rayCount / 2)]);
+                }
             }
             else
             {
-                weightRotate[i] = parent_2.WeightsRotate[i];
-                weightForward[i] = parent_2.WeightsForward[i];
+                if (i < Driver.rayCount / 2)
+                {
+                    weightRotate[i] = NewWeights(parent_2.WeightsRotate[i]);
+                }
+                else
+                {
+                    weightForward[i - (Driver.rayCount / 2)] =
+                        NewWeights(parent_2.WeightsForward[i - (Driver.rayCount / 2)]);
+                }
             }
         }
         Driver newDriver = new Driver();
@@ -135,6 +165,15 @@ public class GenericAlgorithm
         return newDriver;
     }
 
+    double[] NewWeights(double[] weights)
+    {
+        double[] result = new double[2];
+        for(int i = 0; i < 2; i++)
+        {
+            result[i] = weights[i];
+        }
+        return result;
+    }
     /// <summary>
     /// Метод мутации
     /// </summary>
@@ -142,27 +181,30 @@ public class GenericAlgorithm
     /// <returns></returns>
     Driver[] Mutation(Driver[] individuals)
     {
-        for(int i = 0; i < individuals.Length * percentMutationIndividuals; i++)
+        for(int i = dontChangeBestCount; i < individuals.Length * percentMutationIndividuals; i++)
         {
-            int indx = r.Next(individuals.Length);
-            Driver driver = individuals[indx];
-            for(int j = 0; j < Driver.rayCount; j++)
+            //int indx = r.Next(individuals.Length);
+            Driver driver = individuals[i];
+            for(int j = 0; j < Driver.rayCount / 2; j++)
             {
-                int mutation = r.Next(100);
-                if(mutation < percentMutation * 100)
+                for(int k = 0; k < driver.WeightsRotate[j].Length; k++)
                 {
-                    driver.WeightsRotate[j] = RandomGenes();
+                    double mutation = r.Next(100) + r.NextDouble();
+                    if (mutation < percentMutation * 100)
+                    {
+                        driver.WeightsRotate[j][k] = RandomGene(driver.WeightsRotate[j][k]);
+                    }
                 }
             }
-            for (int j = 0; j < Driver.rayCount; j++)
+            for (int j = 0; j < Driver.rayCount - 1; j++)
             {
                 int mutation = r.Next(100);
                 if (mutation < percentMutation * 100)
                 {
-                    driver.WeightsForward[j] = RandomGenes();
+                    driver.WeightsForward[j][1] = RandomGene(driver.WeightsForward[j][1]);
                 }
             }
-            individuals[indx] = driver;
+            individuals[i] = driver;
         }
         return individuals;
     }
@@ -172,12 +214,10 @@ public class GenericAlgorithm
     /// Получение случайных генов, вызывается в методе мутации
     /// </summary>
     /// <returns></returns>
-    double[] RandomGenes()
+    double RandomGene(double gene)
     {
-        double[] genes = new double[2];
-        genes[0] = r.Next(-10, 10) + r.NextDouble();
-        genes[1] = r.Next(-10, 10) + r.NextDouble();
-        return genes;
+        double delta = r.NextDouble();
+        return gene + delta > 1 || gene + delta < -1 ? gene - delta : gene + delta;
     }
 
     public Driver[] GetDrivers()
@@ -195,6 +235,7 @@ public class GenericAlgorithm
 
     public GenericAlgorithm()
     {
+        dontChangeBestCount = (int)(countPopulation * percentBest);
         if (Directory.Exists("Generations"))
         {
             Directory.Delete("Generations", true);

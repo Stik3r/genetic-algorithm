@@ -16,64 +16,103 @@ public class Driver:MonoBehaviour
     static public int number = 0;
 
     float[] rayHit;
-    float speed;
-    static public int rayCount = 5;
+    static public int rayCount = 6;
 
-    public float score = 0;
-    float timer, duration = 0.5f;
+    public float score;
+    float livePoint, triggerPoint;
+    float timer, duration, checkCars, timerCars;
+    float distanse;
 
     double[][] weightsRotate;
     double[][] weightsForward;
+    //double[][] weightsStop;
     Move move;
 
     Transform previousTrigger;
+
+    Vector3 oldPos;
 
     public bool Alive { get; set; }
 
     public void RandomWeight()
     {
-        for(int i = 0; i < rayCount; i++)
+        for(int i = 0; i < rayCount / 2; i++)
         {
             weightsRotate[i] = new double[2];
-            weightsForward[i] = new double[2];
             for(int j = 0; j < 2; j++)
             {
-                weightsRotate[i][j] = 0;
-                weightsForward[i][j] = 0;
+                weightsRotate[i][j] = r.Next(-1, 1) + r.NextDouble();
             }
+        }
+        for(int i = 0; i < rayCount - 1; i++)
+        {
+            weightsForward[i] = new double[2];
+            weightsForward[i][0] = 90 / 6 * (i + 1);
+            weightsForward[i][1] = r.Next(-1, 1) + r.NextDouble();
         }
     }
 
-    public Directional GetRotate()
+    public Directional GetRotate(out float scaleRotate)
     {
         double left = 0;
         double right = 0;
         for(int i = 0; i < rayCount; i++)
         {
-            left += rayHit[i] * weightsRotate[i][0];
-            right += rayHit[i] * weightsRotate[i][1];
+            if(i <= 2)
+            {
+                right += rayHit[i];
+            }
+            else if( i > 2)
+            {
+                left += rayHit[i];
+            }
         }
         Directional result = left > right ? Directional.LEFT : Directional.RIGHT;
+        int start;
+        scaleRotate = 0;
+        if(result == Directional.LEFT)
+        {
+            start = 3;
+            for (int i = 0; i < rayCount / 2; i++)
+            {
+                if (rayHit[i + start] < 15f)
+                {
+                    scaleRotate += (float)weightsRotate[i][0];
+                }
+            }
+        }
+        else
+        {
+            start = 0;
+            for (int i = 0; i < rayCount / 2; i++)
+            {
+                if (rayHit[i + start] < 15f)
+                {
+                    scaleRotate += (float)weightsRotate[i][1];
+                }
+            }
+        }
         return result;
     }
 
-    public Directional GetSpeed()
+    public float GetSpeed()
     {
         double gas = 0;
-        double stop = 0;
+        float result = 0;
         for (int i = 0; i < rayCount; i++)
         {
-            gas += rayHit[i] * weightsForward[i][0] + speed;
-            stop += rayHit[i] * weightsForward[i][1] + speed;
+            gas += rayHit[i];
         }
-        Directional result = stop > gas ? Directional.FORWARD : Directional.BACK;
+        for(int i = 0; i < rayCount - 1; i++)
+        {
+            if (weightsForward[i][0] >= (int)gas)
+            {
+                result = (float)weightsForward[i][1];
+            }
+        }
         return result;
     }
 
-    public void SetSpeed(float curreSpeed)
-    {
-        speed = curreSpeed;
-    }
     public void SetRayHit(RaycastHit[] hits)
     {
         for(int i = 0; i < hits.Length; i++)
@@ -84,7 +123,7 @@ public class Driver:MonoBehaviour
             }
             else
             {
-                rayHit[i] = 0;
+                rayHit[i] = 15f;
             }
         }
     }
@@ -92,7 +131,7 @@ public class Driver:MonoBehaviour
     public string GetWeightsLogs()
     {
         string result = "Веса поворота: \n";
-        for(int i = 0; i < rayCount; i++)
+        for(int i = 0; i < rayCount / 2; i++)
         {
             result += "Луч номер " + i.ToString() + ": ";
             for(int j = 0; j < 2; j++)
@@ -103,7 +142,7 @@ public class Driver:MonoBehaviour
         }
         result += "\n ____________________________________\n";
         result += "Веса газа/тормоза: \n";
-        for (int i = 0; i < rayCount; i++)
+        for (int i = 0; i < rayCount - 1; i++)
         {
             result += "Луч номер " + i.ToString() + ": ";
             for (int j = 0; j < 2; j++)
@@ -129,7 +168,7 @@ public class Driver:MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         Alive = false;
-        UnityEngine.Object.Destroy(transform.GetComponent<Rigidbody>());
+        transform.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeAll;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -143,27 +182,30 @@ public class Driver:MonoBehaviour
         if(indx == MapController.triggers.Length)
         {
             previousTrigger = other.transform.parent;
+            score += triggerPoint;
         }
         else
         {
             if(MapController.triggers[indx].name == other.transform.parent.name)
             {
-                score += 3;
+                score += triggerPoint;
                 previousTrigger = other.transform.parent;
             }
             else
             {
-                
+                triggerPoint = 0;
+                livePoint = 0;
+                Alive = false;
             }
         }
         //Debug.Log(score);
     }
     private void Raycast()
     {
-        RaycastHit[] hits = new RaycastHit[5];
+        RaycastHit[] hits = new RaycastHit[rayCount];
         int carLayer = LayerMask.GetMask("Car", "Trigger");
         int layerMask = (1 << carLayer);
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < rayCount; i++)
         {
             var ray = transform.GetChild(2 + i);
             Vector3 forward = ray.TransformDirection(Vector3.forward) * 15;
@@ -171,7 +213,6 @@ public class Driver:MonoBehaviour
             hits[i] = raycastHit;
         }
         SetRayHit(hits);
-        SetSpeed(move.motor);
     }
 
     public double[][] WeightsRotate 
@@ -200,27 +241,41 @@ public class Driver:MonoBehaviour
 
     private void Awake()
     {
+        score = 0;
+        distanse = 0;
+        duration = 0.05f;
+        livePoint = 0.002f;
+        triggerPoint = 5f;
+        timerCars = 3f;
+        checkCars = Time.time + timerCars;
         move = transform.GetComponent<Move>();
         Alive = true;
         rayHit = new float[rayCount];
-        weightsRotate = new double[rayCount][];
-        weightsForward = new double[rayCount][];
+        weightsRotate = new double[rayCount / 2][];
+        weightsForward = new double[rayCount - 1][];
+        oldPos = transform.position;
     }
-    private void FixedUpdate()
+    private void Update()
     {
         if (Alive)
         {
+            if (checkCars < Time.time)
+            {
+                Alive = distanse < 8 ? false : Alive;
+                checkCars = Time.time + timerCars;
+                distanse = 0;
+            }
             if (timer < Time.time)
             {
-                score += 0.1f;
                 Raycast();
-                move.SetMoveValue(GetSpeed(), GetRotate());
+                distanse += Vector3.Distance(oldPos, transform.position);
+                oldPos = transform.position;
+                float scaleRotate;
+                move.SetMoveValue(GetSpeed(), GetRotate(out scaleRotate), scaleRotate);
                 move.MoveCar();
                 timer = Time.time + duration;
             }
-            /*Raycast();
-            move.SetMoveValue(GetSpeed(), GetRotate());
-            move.MoveCar();*/
+            score += livePoint;
         }
     }
 }
