@@ -24,18 +24,9 @@ public class Move : MonoBehaviour
     float scaleRotate = 0;
     float scaleSpeed = 0;
 
-    public void SetMoveValue(float _scaleSpeed,  Directional rotate, float _scaleRotate)
+    public void SetMoveValue(float _scaleSpeed, float _scaleRotate)
     {
-        if(rotate == Directional.LEFT)
-        {
-            scaleRotate = scaleRotate <= -1 ? -1 : scaleRotate - _scaleRotate;
-            steering = maxSteeringAngle * scaleRotate;
-        }
-        else
-        {
-            scaleRotate = scaleRotate >= 1 ? 1 : scaleRotate + _scaleRotate;
-            steering = maxSteeringAngle * scaleRotate;
-        }
+        steering = maxSteeringAngle * _scaleRotate;
         motor = maxMotorTorque * _scaleSpeed;
     }
     public void MoveCar()
