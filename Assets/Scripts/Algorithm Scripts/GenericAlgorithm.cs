@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
+
 public class GenericAlgorithm
 {
     Population p;
@@ -16,7 +17,7 @@ public class GenericAlgorithm
     int geneCount = 18;
     System.Random r = new System.Random();
 
-    public List<float> bestScores = new List<float>();
+    static public List<VirtualDriver> bestCars = new List<VirtualDriver>();
 
     delegate int[] SelectionType(float[] scores);
     delegate (VirtualDriver, VirtualDriver) CrossoverType(VirtualDriver p1, VirtualDriver p2);
@@ -26,12 +27,11 @@ public class GenericAlgorithm
     float[] min = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 500, 3, 3, 3, 10, 100 };
     float[] max = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1500, 10, 10, 10, 180, 2000 };
     //множители угла поворота(6), множители скорости(6), масса, размеры по осям(3),
-    //максимальный угол поворта, мощность двигателя
+    //максимальный угол поворота, мощность двигателя
 
     /// <summary>
     /// Создание нового поколения
     /// </summary>
-    /// <param name="individuals"></param>
     public VirtualDriver[] RandomPopulation()
     {
         generationNumber = 1;
@@ -200,7 +200,10 @@ public class GenericAlgorithm
         string logs = "";
         dontChangeBestCount = (int)(p.GetDrivers().Length * percentBest);
         var best = Select(p.GetDrivers());
-        bestScores.Add(best[0].score);
+        VirtualDriver driver = new VirtualDriver();
+        driver.Solution = best[0].Solution;
+        driver.score = best[0].score;
+        bestCars.Add(driver);
         VirtualDriver[] newIndividuals = Replication(best);
         newIndividuals = Mutation(newIndividuals);
         p.SetPopulation(newIndividuals);

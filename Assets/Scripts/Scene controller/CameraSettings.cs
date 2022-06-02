@@ -6,10 +6,14 @@ public class CameraSettings : MonoBehaviour
     public static GameObject selectedCar;
     public GameObject score;
 
+    float time = 0;
+    float timer = 5f;
+
 
     private void Start()
     {
         selectedCar = CarsController.cars[0];
+        time = Time.time + timer;
     }
     private void Update()
     {
@@ -42,22 +46,52 @@ public class CameraSettings : MonoBehaviour
         {
             selectedCar = CarsController.cars[0];
         }
-        if(!selectedCar.GetComponent<Driver>().Alive)
-            foreach(var car in CarsController.cars)
+        if (!selectedCar.GetComponent<Driver>().Alive)
+        {
+            int indx = CarsController.BestCar();
+            if (indx != -1)
             {
-                if (car.GetComponent<Driver>().Alive)
+                foreach (Transform child in selectedCar.transform)
                 {
-                    foreach (Transform child in selectedCar.transform)
+                    if (child.name.Contains("ray"))
                     {
-                        if (child.name.Contains("ray"))
-                        {
-                            child.GetComponent<LineRenderer>().enabled = false;
-                        }
+                        child.GetComponent<LineRenderer>().enabled = false;
                     }
-                    selectedCar = car;
-                    break;
+                }
+                selectedCar = CarsController.cars[indx];
+                foreach (Transform child in selectedCar.transform)
+                {
+                    if (child.name.Contains("ray"))
+                    {
+                        child.GetComponent<LineRenderer>().enabled = true;
+                    }
                 }
             }
+            time = Time.time + timer;
+        }
+        if (time < Time.time)
+        {
+            int indx = CarsController.BestCar();
+            if (indx != -1)
+            {
+                foreach (Transform child in selectedCar.transform)
+                {
+                    if (child.name.Contains("ray"))
+                    {
+                        child.GetComponent<LineRenderer>().enabled = false;
+                    }
+                }
+                selectedCar = CarsController.cars[indx];
+                foreach (Transform child in selectedCar.transform)
+                {
+                    if (child.name.Contains("ray"))
+                    {
+                        child.GetComponent<LineRenderer>().enabled = true;
+                    }
+                }
+            }
+            time = Time.time + timer;
+        }
         transform.LookAt(selectedCar.transform);
         transform.position = new Vector3(selectedCar.transform.position.x,
             selectedCar.transform.position.y + 15,

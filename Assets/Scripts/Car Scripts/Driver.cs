@@ -32,6 +32,43 @@ public class VirtualDriver
         } while (result < min || result > max);
         Solution[indx] = result;
     }
+
+    public string[] CarStats()
+    {
+        string[] result = new string[8];
+        result[0] = score.ToString();
+        for(int i = 0; i < 3; i++)
+        {
+            result[1] += Math.Round(Solution[i], 3).ToString() + " | ";
+        }
+        for (int i = 3; i < 6; i++)
+        {
+            result[2] += Math.Round(Solution[i], 3).ToString() + " | ";
+        }
+        for (int i = 6; i < 12; i++)
+        {
+            result[3] += Math.Round(Solution[i], 3).ToString() + " | ";
+        }
+        result[4] = Solution[12].ToString();
+        for (int i = 13; i < 16; i++)
+        {
+            switch (i)
+            {
+                case 13: 
+                    result[5] += $"x - {Math.Round(Solution[i], 3)} | ";
+                    break;
+                case 14:
+                    result[5] += $"y - {Math.Round(Solution[i], 3)} | ";
+                    break;
+                case 15:
+                    result[5] += $"z - {Math.Round(Solution[i], 3)} | ";
+                    break;
+            }
+        }
+        result[6] = Solution[16].ToString();
+        result[7] = Solution[17].ToString();
+        return result;
+    }
     public string SolutionLogs()
     {
         string log = "Множители поворота:\n";
@@ -65,7 +102,7 @@ public class Driver : MonoBehaviour
     float[] rays;
     public float score = 0;
     float livePoint = 0.01f;
-    float triggerPoint = 5f;
+    float triggerPoint = 15f;
 
     float timerDistance, timerRay;
     float rateDistance, rateRays;
@@ -101,7 +138,7 @@ public class Driver : MonoBehaviour
     void Awake()
     {
         Alive = true;
-        rateRays = 0.1f;
+        rateRays = 0.09f;
         rateDistance = 3f;
         timerDistance = Time.time + rateDistance;
         timerRay = Time.time + rateRays;
@@ -110,7 +147,7 @@ public class Driver : MonoBehaviour
         rays = new float[rayCount];
     }
 
-    void Update()
+    void FixedUpdate()
     {
         if (Alive)
         {
@@ -141,7 +178,7 @@ public class Driver : MonoBehaviour
         int hitRaysR = 0;
         for (int i = 0; i < rayCount; i++)
         {
-            if(i < 2)
+            if(i < 3)
             {
                 if(rays[i] < 15f)
                 {

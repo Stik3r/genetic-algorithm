@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -8,6 +9,24 @@ public static class CarsController
 {
     public static List<GameObject> cars = new List<GameObject>();
 
+    public static int BestCar()
+    {
+        float max = 0;
+        int indx = -1;
+        for(int i = 0; i < cars.Count; i++)
+        {
+            Driver driver = cars[i].GetComponent<Driver>();
+            if (driver.Alive)
+            {
+                if(max < driver.score)
+                {
+                    max = driver.score;
+                    indx = i;
+                }
+            }
+        }
+        return indx;
+    }
 }
 public class GameController : MonoBehaviour
 {
@@ -81,6 +100,7 @@ public class GameController : MonoBehaviour
         {
             CameraSettings.selectedCar = null;
             CarsController.cars.Clear();
+            GenericAlgorithm.bestCars.Clear();
             SceneManager.LoadScene("MenuScene");
         }
         if(timer < Time.time)
@@ -90,6 +110,9 @@ public class GameController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Устанавливает стандартные значения в меню настройки
+    /// </summary>
     void SetDefaultValues()
     {
         menuPanel.transform.Find("TypeSelect").GetComponent<Dropdown>().onValueChanged.AddListener(TypeSelectChange);
@@ -167,24 +190,38 @@ public class GameController : MonoBehaviour
     {
         statsPanel.SetActive(true);
         Camera.main.orthographic = true;
-        float max = Mathf.Max(algorithm.bestScores.ToArray());
+        var scores = from car in GenericAlgorithm.bestCars
+                     select car.score;
+        float max = Mathf.Max(scores.ToArray());
         float maxHeight = 405f;
-        foreach (var score in algorithm.bestScores)
+        int indx = 0;
+        foreach (var score in scores)
         {
-            GameObject panel = Instantiate(tamplatePanel, statsContent.transform, false);
-            panel.SetActive(true);
             float heightMultiply = score / max;
             float sizeY = maxHeight * heightMultiply + 20;
+
+            GameObject panel = Instantiate(tamplatePanel, statsContent.transform, false);
+            panel.SetActive(true);
+            panel.name = indx.ToString();
             panel.GetComponent<RectTransform>().sizeDelta = new Vector2(33, sizeY);
+            panel.AddComponent<StatsBestCar>();
+
+            BoxCollider collider = panel.AddComponent<BoxCollider>();
+            collider.center = new Vector3(1, 0, 0);
+            collider.size = new Vector3(30, sizeY, 0);
+
             GameObject text = Instantiate(tamplateText, panel.transform, false);
             text.SetActive(true);
             text.GetComponent<RectTransform>().localPosition =
                 new Vector3(0, (-sizeY / 2f) - 10f, 0);
             text.GetComponent<Text>().text = Math.Round(score, 1).ToString();
+
             GameObject image = Instantiate(tamplateImage, panel.transform, false);
             image.SetActive(true);
             image.GetComponent<RectTransform>().sizeDelta = new Vector2(33, sizeY - 15);
             image.GetComponent<Image>().color = Color.blue;
+
+            indx++;
         }
     }
     public void CloseBtn()
@@ -216,6 +253,7 @@ public class GameController : MonoBehaviour
     public void Restart()
     {
         Camera.main.GetComponent<CameraSettings>().enabled = false;
+        GenericAlgorithm.bestCars.Clear();
         foreach (var car in CarsController.cars)
         {
             Destroy(car.gameObject);
@@ -239,7 +277,6 @@ public class GameController : MonoBehaviour
     public void ChanceMutationChange(string value)
     {
         float percent = float.Parse(value) / 100f;
-        Debug.Log(percent);
         if(percent < 0 || percent > 1)
         {
             menuPanel.transform.Find("ChanceMutation").GetComponent<InputField>().text =
